@@ -1,0 +1,33 @@
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+// https://vitejs.dev/config/
+export default defineConfig(function (_a) {
+    var mode = _a.mode;
+    // Load env file based on `mode` in the current working directory.
+    var env = loadEnv(mode, process.cwd(), '');
+    // Determine base path based on environment
+    // Priority: VITE_BASE_PATH env variable > auto-detect Vercel > default '/COFFEE1/' for GitHub Pages
+    // For Vercel: automatically uses '/' (or set VITE_BASE_PATH=/ in Vercel dashboard)
+    // For GitHub Pages: set VITE_BASE_PATH=/COFFEE1/ in GitHub Actions or use default
+    var basePath = '/COFFEE1/'; // Default for GitHub Pages
+
+    if (env.VITE_BASE_PATH) {
+        // Explicit override from env variable
+        basePath = env.VITE_BASE_PATH;
+    }
+    else if (process.env.VERCEL || process.env.VERCEL_ENV || process.env.CI) {
+        // Auto-detect Vercel or CI environment (usually means root path)
+        // Note: Vercel sets VERCEL=1 automatically
+        basePath = '/';
+    }
+    return {
+        base: basePath,
+        plugins: [react()],
+        define: {
+            // This "polyfills" process.env.API_KEY so it works in the browser
+            'process.env': {
+                API_KEY: env.VITE_API_KEY
+            }
+        }
+    };
+});
