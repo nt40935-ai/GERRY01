@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Combo, ComboItem, Product, Language } from '../../../types';
 import { formatPrice } from '../../../constants';
 import { Plus, Trash2, Edit3, PackagePlus, X } from 'lucide-react';
@@ -24,12 +24,6 @@ const ComboManager: React.FC<ComboManagerProps> = ({ combos, products, onAdd, on
     isActive: true,
     items: []
   });
-
-  const productMap = useMemo(() => {
-    const m = new Map<string, Product>();
-    products.forEach(p => m.set(p.id, p));
-    return m;
-  }, [products]);
 
   const reset = () => {
     setIsEditing(false);

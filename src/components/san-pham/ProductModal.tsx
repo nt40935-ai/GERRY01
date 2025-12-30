@@ -16,6 +16,7 @@ interface ProductModalProps {
   onAddReview: (review: Review) => void;
   user: User | null;
   toppings: Topping[]; // Dynamic toppings passed from App state
+  sizeLPrice: number; // Size L upcharge price
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose, onConfirm, onShare, language, reviews, onAddReview, user, toppings, sizeLPrice }) => {

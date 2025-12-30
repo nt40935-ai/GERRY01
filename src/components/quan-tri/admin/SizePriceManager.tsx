@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Language } from '../../../types';
-import { Edit2, Save, X, Ruler } from 'lucide-react';
+import { Edit2, Save, Ruler } from 'lucide-react';
 import { formatPrice } from '../../../constants';
 
 interface SizePriceManagerProps {
