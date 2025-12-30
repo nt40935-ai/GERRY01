@@ -12,9 +12,10 @@ interface UserProfileProps {
   orders: Order[];
   onUpdateUser: (updatedUser: User) => void;
   language: Language;
+  sizeLPrice: number; // Size L upcharge price
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose, user, orders, onUpdateUser, language }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose, user, orders, onUpdateUser, language, sizeLPrice }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('profile');
   const [formData, setFormData] = useState<Partial<User>>({});
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -243,7 +244,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ isOpen, onClose, user, orders
                                      {order.items && order.items.length > 0 ? (
                                         order.items.map((item, idx) => {
                                            // Use helper
-                                           const itemPrice = calculateItemPrice(item);
+                                           const itemPrice = calculateItemPrice(item, undefined, undefined, sizeLPrice);
                                            
                                            return (
                                               <div key={idx} className="flex gap-4 p-2 bg-white rounded border border-gray-100">

@@ -8,9 +8,10 @@ interface OrderManagerProps {
   orders: Order[];
   onUpdateStatus: (id: string, status: OrderStatus) => void;
   language: Language;
+  sizeLPrice: number; // Size L upcharge price
 }
 
-const OrderManager: React.FC<OrderManagerProps> = ({ orders, onUpdateStatus, language }) => {
+const OrderManager: React.FC<OrderManagerProps> = ({ orders, onUpdateStatus, language, sizeLPrice }) => {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(''); // For filtering by date
   const t = TRANSLATIONS[language];
@@ -45,7 +46,7 @@ const OrderManager: React.FC<OrderManagerProps> = ({ orders, onUpdateStatus, lan
     if (!printWindow) return;
 
     const itemsHtml = order.items.map(item => {
-        const itemTotal = calculateItemPrice(item) * item.quantity;
+        const itemTotal = calculateItemPrice(item, undefined, undefined, sizeLPrice) * item.quantity;
         const toppingsHtml = item.toppings && item.toppings.length > 0 
             ? `<div class="toppings">+ ${item.toppings.map(t => t.name).join(', ')}</div>` 
             : '';
@@ -252,7 +253,7 @@ const OrderManager: React.FC<OrderManagerProps> = ({ orders, onUpdateStatus, lan
                                   {order.items && order.items.length > 0 ? (
                                     order.items.map((item, idx) => {
                                       // Use helper
-                                      const itemPrice = calculateItemPrice(item);
+                                      const itemPrice = calculateItemPrice(item, undefined, undefined, sizeLPrice);
                                       
                                       return (
                                         <div key={idx} className="flex justify-between items-start p-2 bg-gray-50 rounded">

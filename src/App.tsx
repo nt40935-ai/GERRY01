@@ -173,6 +173,14 @@ const App: React.FC = () => {
     } catch (e) { return TOPPINGS_LIST; }
   });
 
+  // 10.5. Database: Size L Price (NEW)
+  const [sizeLPrice, setSizeLPrice] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('gerry_size_l_price');
+      return saved ? parseFloat(saved) : 0.50; // Default to $0.50
+    } catch (e) { return 0.50; }
+  });
+
   // 11. Database: Jobs (Recruitment)
   const [jobs, setJobs] = useState<Job[]>(() => {
     try {
@@ -263,6 +271,7 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('gerry_orders', JSON.stringify(orders)), [orders]);
   useEffect(() => localStorage.setItem('gerry_brand_settings', JSON.stringify(brandSettings)), [brandSettings]);
   useEffect(() => localStorage.setItem('gerry_toppings', JSON.stringify(toppings)), [toppings]);
+  useEffect(() => localStorage.setItem('gerry_size_l_price', sizeLPrice.toString()), [sizeLPrice]);
   useEffect(() => localStorage.setItem('gerry_jobs', JSON.stringify(jobs)), [jobs]);
   useEffect(() => localStorage.setItem('gerry_applications', JSON.stringify(applications)), [applications]);
   useEffect(() => localStorage.setItem('gerry_partnership', JSON.stringify(partnershipContent)), [partnershipContent]);
@@ -453,7 +462,7 @@ const App: React.FC = () => {
   // Checkout Logic (FIXED: Now saves cart items to order + loyalty points)
   const handleCheckout = (details: any) => {
     const orderSubtotal = cartItems.reduce(
-      (sum, item) => sum + calculateItemPrice(item) * item.quantity,
+      (sum, item) => sum + calculateItemPrice(item, undefined, undefined, sizeLPrice) * item.quantity,
       0
     );
 
@@ -531,6 +540,9 @@ const App: React.FC = () => {
   const handleUpdateTopping = (updatedTopping: Topping) => setToppings(prev => prev.map(t => t.id === updatedTopping.id ? updatedTopping : t));
   const handleDeleteTopping = (id: string) => setToppings(prev => prev.filter(t => t.id !== id));
 
+  // Size Price Logic
+  const handleUpdateSizeLPrice = (price: number) => setSizeLPrice(price);
+
   // Combo Logic
   const handleAddCombo = (combo: Combo) => setCombos(prev => [combo, ...prev]);
   const handleUpdateCombo = (combo: Combo) => setCombos(prev => prev.map(c => (c.id === combo.id ? combo : c)));
@@ -601,7 +613,9 @@ const App: React.FC = () => {
         onUpdateUser={handleUpdateUserProfile}
         onAddTopping={handleAddTopping}
         onUpdateTopping={handleUpdateTopping}
-        onDeleteTopping={handleDeleteTopping} 
+        onDeleteTopping={handleDeleteTopping}
+        sizeLPrice={sizeLPrice}
+        onUpdateSizeLPrice={handleUpdateSizeLPrice}
         onAddJob={handleAddJob}
         onUpdateJob={handleUpdateJob}
         onDeleteJob={handleDeleteJob}
@@ -741,6 +755,7 @@ const App: React.FC = () => {
           }
         }}
         language={language}
+        sizeLPrice={sizeLPrice}
       />
 
       <AuthModal 
@@ -755,11 +770,12 @@ const App: React.FC = () => {
          isOpen={isCheckoutOpen}
          onClose={() => setIsCheckoutOpen(false)}
          cartItems={cartItems}
-         total={cartItems.reduce((sum, item) => sum + calculateItemPrice(item) * item.quantity, 0)}
+         total={cartItems.reduce((sum, item) => sum + calculateItemPrice(item, undefined, undefined, sizeLPrice) * item.quantity, 0)}
          user={user}
          onCheckout={handleCheckout}
          language={language}
          brandSettings={brandSettings}
+         sizeLPrice={sizeLPrice}
       />
       
       <Assistant 
@@ -782,6 +798,7 @@ const App: React.FC = () => {
         onAddReview={handleAddReview}
         user={user}
         toppings={toppings} // Pass dynamic toppings
+        sizeLPrice={sizeLPrice} // Pass size L price
         onShare={(product) => {
           const shareUrl = new URL(window.location.href);
           shareUrl.searchParams.set('product', product.id);
@@ -805,6 +822,7 @@ const App: React.FC = () => {
           orders={orders.filter(o => o.userId === user.id || o.customerName === user.name)}
           onUpdateUser={handleUpdateUserProfile}
           language={language}
+          sizeLPrice={sizeLPrice}
         />
       )}
     </div>

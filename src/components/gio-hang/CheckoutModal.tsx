@@ -14,9 +14,10 @@ interface CheckoutModalProps {
   language: Language;
   promotions?: DiscountCode[];
   brandSettings: BrandSettings;
+  sizeLPrice: number; // Size L upcharge price
 }
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItems, total, user, onCheckout, language, promotions = [], brandSettings }) => {
+const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItems, total, user, onCheckout, language, promotions = [], brandSettings, sizeLPrice }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [discountCode, setDiscountCode] = useState('');
@@ -74,7 +75,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
 
     const applicableTotal = cartItems
       .filter(item => code.applicableProductIds.includes(item.originalId || item.id))
-      .reduce((sum, item) => sum + calculateItemPrice(item) * item.quantity, 0);
+      .reduce((sum, item) => sum + calculateItemPrice(item, undefined, undefined, sizeLPrice) * item.quantity, 0);
 
     if (code.type === 'percent') {
       return (applicableTotal * code.value) / 100;

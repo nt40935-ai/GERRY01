@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Product, Order, OrderStatus, Banner, BrandSettings, Category, DiscountCode, Language, User, Topping, Job, JobApplication, PartnershipContent, Combo, Reservation, ReservationStatus } from '../../../types';
-import { LayoutDashboard, Coffee, ShoppingBag, LogOut, TrendingUp, Users, DollarSign, Image as ImageIcon, Settings, BarChart3, Globe, List, Ticket, Store, Layers, Briefcase, Inbox, MessageSquare, PackagePlus, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Coffee, ShoppingBag, LogOut, TrendingUp, Users, DollarSign, Image as ImageIcon, Settings, BarChart3, Globe, List, Ticket, Store, Layers, Briefcase, Inbox, MessageSquare, PackagePlus, CalendarDays, Ruler } from 'lucide-react';
 import ProductManager from './ProductManager';
 import OrderManager from './OrderManager';
 import BannerManager from './BannerManager';
@@ -11,6 +11,7 @@ import PromotionManager from './PromotionManager';
 import SalesReports from './SalesReports';
 import UserManager from './UserManager';
 import ToppingManager from './ToppingManager'; // NEW
+import SizePriceManager from './SizePriceManager'; // NEW
 import JobManager from './JobManager';
 import ApplicationManager from './ApplicationManager';
 import UserProfile from '../../tai-khoan/UserProfile';
@@ -58,6 +59,8 @@ interface AdminDashboardProps {
   onAddTopping: (topping: Topping) => void; // NEW
   onUpdateTopping: (topping: Topping) => void; // NEW
   onDeleteTopping: (id: string) => void; // NEW
+  sizeLPrice: number; // NEW
+  onUpdateSizeLPrice: (price: number) => void; // NEW
   onAddJob: (job: Job) => void;
   onUpdateJob: (job: Job) => void;
   onDeleteJob: (id: string) => void;
@@ -104,6 +107,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onAddTopping,
   onUpdateTopping,
   onDeleteTopping,
+  sizeLPrice,
+  onUpdateSizeLPrice,
   onAddJob,
   onUpdateJob,
   onDeleteJob,
@@ -125,6 +130,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     | 'reservations'
     | 'users'
     | 'toppings'
+    | 'sizePrices'
     | 'recruitment'
     | 'applications'
     | 'partnership'
@@ -185,6 +191,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <NavItem id="products" icon={Coffee} label={t.admin_nav.products} />
           <NavItem id="categories" icon={List} label={t.admin_nav.categories} />
           <NavItem id="toppings" icon={Layers} label="Toppings" />
+          <NavItem id="sizePrices" icon={Ruler} label={language === 'vi' ? 'Giá Kích Thước Ly' : 'Cup Size Prices'} />
           <NavItem id="orders" icon={ShoppingBag} label={t.admin_nav.orders} badge={pendingOrdersCount} />
           <NavItem id="reservations" icon={CalendarDays} label={language === 'vi' ? 'Đặt bàn' : 'Reservations'} badge={reservations.filter(r => r.status === 'Pending').length} />
           <NavItem id="users" icon={Users} label={t.admin_nav.users} />
@@ -234,6 +241,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
              activeTab === 'products' ? t.admin_nav.products :
              activeTab === 'categories' ? t.admin_nav.categories :
              activeTab === 'toppings' ? 'Topping Management' :
+             activeTab === 'sizePrices' ? (language === 'vi' ? 'Quản Lý Giá Kích Thước Ly' : 'Cup Size Price Management') :
              activeTab === 'recruitment' ? (t.admin_nav.recruitment || 'Recruitment') :
              activeTab === 'applications' ? (t.admin_nav.applications || 'Applications') :
              activeTab === 'combos' ? (language === 'vi' ? 'Combo' : 'Combos') :
@@ -376,11 +384,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             />
           )}
 
+          {activeTab === 'sizePrices' && (
+            <SizePriceManager
+              sizeLPrice={sizeLPrice}
+              onUpdate={onUpdateSizeLPrice}
+              language={language}
+            />
+          )}
+
           {activeTab === 'orders' && (
              <OrderManager 
               orders={orders}
               onUpdateStatus={onUpdateOrderStatus}
               language={language}
+              sizeLPrice={sizeLPrice}
              />
           )}
 
@@ -474,6 +491,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           orders={orders.filter(o => o.userId === currentUser.id || o.customerName === currentUser.name)}
           onUpdateUser={onUpdateUser}
           language={language}
+          sizeLPrice={sizeLPrice}
         />
       </div>
     </div>

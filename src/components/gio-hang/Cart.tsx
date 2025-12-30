@@ -12,11 +12,12 @@ interface CartProps {
   onRemoveItem: (id: string) => void;
   onCheckout: () => void;
   language: Language;
+  sizeLPrice: number; // Size L upcharge price
 }
 
-const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onCheckout, language }) => {
+const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onCheckout, language, sizeLPrice }) => {
   // Use helper for total calculation
-  const total = items.reduce((sum, item) => sum + calculateItemPrice(item) * item.quantity, 0);
+  const total = items.reduce((sum, item) => sum + calculateItemPrice(item, undefined, undefined, sizeLPrice) * item.quantity, 0);
   const t = TRANSLATIONS[language];
 
   return (
@@ -66,7 +67,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, items, onUpdateQuantity, o
           ) : (
             items.map((item, index) => {
               // Calculate display price per unit
-              const unitPrice = calculateItemPrice(item);
+              const unitPrice = calculateItemPrice(item, undefined, undefined, sizeLPrice);
 
               return (
                 <div key={`${item.id}-${index}`} className="flex gap-4 animate-in slide-in-from-right-5 duration-300">

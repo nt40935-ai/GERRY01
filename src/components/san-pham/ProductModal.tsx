@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Product, ProductSize, Language, ProductCategory, Review, User, Topping } from '../../types';
 import { X, Coffee, MessageSquare, Star, Layers, Check, Share2 } from 'lucide-react';
-import { TRANSLATIONS, formatPrice, SIZE_L_UPCHARGE, calculateItemPrice } from '../../constants';
+import { TRANSLATIONS, formatPrice, calculateItemPrice } from '../../constants';
 import ReviewSection from './ReviewSection';
 
 interface ProductModalProps {
@@ -18,7 +18,7 @@ interface ProductModalProps {
   toppings: Topping[]; // Dynamic toppings passed from App state
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose, onConfirm, onShare, language, reviews, onAddReview, user, toppings }) => {
+const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose, onConfirm, onShare, language, reviews, onAddReview, user, toppings, sizeLPrice }) => {
   const [size, setSize] = useState<ProductSize>('M');
   const [note, setNote] = useState('');
   const [selectedToppings, setSelectedToppings] = useState<Topping[]>([]);
@@ -54,7 +54,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose, o
     }
   };
 
-  const currentTotal = calculateItemPrice(product, isDrink ? size : undefined, selectedToppings);
+  const currentTotal = calculateItemPrice(product, isDrink ? size : undefined, selectedToppings, sizeLPrice);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-2 sm:p-4">
@@ -138,7 +138,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose, o
                         className="hidden" 
                         />
                         <span className="font-bold text-base sm:text-lg">L</span>
-                        <span className="text-xs">Large (+{formatPrice(SIZE_L_UPCHARGE, language)})</span>
+                        <span className="text-xs">Large (+{formatPrice(sizeLPrice, language)})</span>
                     </label>
                     </div>
                 </div>

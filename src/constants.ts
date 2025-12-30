@@ -410,12 +410,13 @@ export const SIZE_L_UPCHARGE = 0.50; // $0.50 upcharge for Large size
 export const LOYALTY_POINT_VALUE_VND = 10000; // 10,000 VND = 1 point
 
 // Helper to calculate total price of a cart item
-export const calculateItemPrice = (item: CartItem | Product, size?: 'M' | 'L', toppings?: Topping[]) => {
+export const calculateItemPrice = (item: CartItem | Product, size?: 'M' | 'L', toppings?: Topping[], sizeLPrice?: number) => {
   let price = item.price;
   
-  // Handle size upcharge
+  // Handle size upcharge - use provided sizeLPrice or fallback to default
+  const upcharge = sizeLPrice !== undefined ? sizeLPrice : SIZE_L_UPCHARGE;
   if ((item as CartItem).size === 'L' || size === 'L') {
-    price += SIZE_L_UPCHARGE;
+    price += upcharge;
   }
   
   // Handle toppings
