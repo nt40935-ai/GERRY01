@@ -23,10 +23,8 @@ const DEFAULT_TABLES: TableDef[] = [
   { id: 'T8', name: 'T8', capacity: 6, zone: 'Group' },
 ];
 
-const TIME_SLOTS = ['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'];
-
 function toISO(date: string, time: string) {
-  // date: yyyy-mm-dd
+  // date: yyyy-mm-dd, time: HH:mm
   return new Date(`${date}T${time}:00`).toISOString();
 }
 
@@ -35,9 +33,10 @@ const TableBooking: React.FC<TableBookingProps> = ({ language, user, reservation
 
   const today = new Date();
   const defaultDate = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const defaultTime = '19:30';
 
   const [date, setDate] = useState(defaultDate);
-  const [time, setTime] = useState('19:30');
+  const [time, setTime] = useState(defaultTime);
   const [partySize, setPartySize] = useState(2);
   const [tableId, setTableId] = useState<string>('T4');
   const [form, setForm] = useState({
@@ -182,22 +181,14 @@ const TableBooking: React.FC<TableBookingProps> = ({ language, user, reservation
                   <Clock className="w-4 h-4" />
                   {language === 'vi' ? 'Giờ đến' : 'Time'}
                 </label>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {TIME_SLOTS.map(slot => (
-                    <button
-                      key={slot}
-                      type="button"
-                      onClick={() => setTime(slot)}
-                      className={`px-4 py-2 rounded-full border text-sm font-bold transition-all active:scale-95 touch-manipulation ${
-                        time === slot
-                          ? 'bg-amber-600 border-amber-500 text-white'
-                          : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10'
-                      }`}
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="time"
+                  value={time}
+                  onChange={e => setTime(e.target.value)}
+                  className="mt-2 w-full rounded-xl bg-white/10 border border-white/10 text-white px-4 py-3 outline-none focus:ring-2 focus:ring-amber-500/40"
+                  min="08:00"
+                  max="22:00"
+                />
               </div>
             </div>
 
@@ -331,6 +322,12 @@ const TableBooking: React.FC<TableBookingProps> = ({ language, user, reservation
 };
 
 export default TableBooking;
+
+
+
+
+
+
 
 
 
