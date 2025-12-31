@@ -5,21 +5,9 @@ export default defineConfig(function (_a) {
     var mode = _a.mode;
     // Load env file based on `mode` in the current working directory.
     var env = loadEnv(mode, process.cwd(), '');
-    // Determine base path based on environment
-    // Priority: VITE_BASE_PATH env variable > auto-detect Vercel > default '/COFFEE1/' for GitHub Pages
-    // For Vercel: automatically uses '/' (or set VITE_BASE_PATH=/ in Vercel dashboard)
-    // For GitHub Pages: set VITE_BASE_PATH=/COFFEE1/ in GitHub Actions or use default
-    var basePath = '/COFFEE1/'; // Default for GitHub Pages
-
-    if (env.VITE_BASE_PATH) {
-        // Explicit override from env variable
-        basePath = env.VITE_BASE_PATH;
-    }
-    else if (process.env.VERCEL || process.env.VERCEL_ENV || process.env.CI) {
-        // Auto-detect Vercel or CI environment (usually means root path)
-        // Note: Vercel sets VERCEL=1 automatically
-        basePath = '/';
-    }
+    // Determine base path for GitHub Pages deployment
+    // Default to /GERRY01/ for GitHub Pages, or use VITE_BASE_PATH if set
+    var basePath = env.VITE_BASE_PATH || '/GERRY01/';
     return {
         base: basePath,
         plugins: [react()],

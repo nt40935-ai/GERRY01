@@ -22,6 +22,7 @@ import ProductModal from './components/san-pham/ProductModal';
 import UserProfile from './components/tai-khoan/UserProfile';
 import { CartItem, Product, Order, OrderStatus, Banner, User, FilterState, Language, BrandSettings, Category, DiscountCode, ProductSize, Review, Topping, Job, JobApplication, PartnershipContent, Combo, Reservation, ReservationStatus } from './types';
 import { PRODUCTS, BANNERS, INITIAL_CATEGORIES, MOCK_REVIEWS, TOPPINGS_LIST, DEFAULT_JOBS, DEFAULT_PARTNERSHIP_CONTENT, calculateItemPrice, calculateEarnedPoints } from './constants';
+import { getOrders, createOrder, updateOrderStatus, subscribeToOrders } from './services/orderService';
 
 const App: React.FC = () => {
   // --- APPLICATION STATE WITH PERSISTENCE ---
@@ -110,40 +111,8 @@ const App: React.FC = () => {
     } catch (e) { return MOCK_REVIEWS; }
   });
 
-  // 8. Database: Orders (Updated with Mock items)
-  const [orders, setOrders] = useState<Order[]>(() => {
-    try {
-      const saved = localStorage.getItem('gerry_orders');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return [
-      { 
-        id: '1001', 
-        userId: 'user-demo-1', 
-        customerName: 'Alex Johnson', 
-        total: 12.50, 
-        status: 'Completed', 
-        date: '2024-03-10', 
-        itemsCount: 3,
-        items: [
-           { ...PRODUCTS[0], quantity: 2, size: 'M' },
-           { ...PRODUCTS[2], quantity: 1, size: 'L' }
-        ]
-      },
-      { 
-        id: '1002', 
-        userId: 'user-demo-1', 
-        customerName: 'Maria Garcia', 
-        total: 8.75, 
-        status: 'Processing', 
-        date: '2024-03-11', 
-        itemsCount: 2,
-        items: [
-           { ...PRODUCTS[3], quantity: 2, size: 'M', note: 'Less ice' }
-        ]
-      },
-    ];
-  });
+  // 8. Database: Orders (Load from Supabase or localStorage)
+  const [orders, setOrders] = useState<Order[]>([]);
 
   // 9. Database: Brand Settings
   const [brandSettings, setBrandSettings] = useState<BrandSettings>(() => {
@@ -259,6 +228,67 @@ const App: React.FC = () => {
     maxPrice: 50,
     searchQuery: ''
   });
+
+  // Load orders from Supabase on mount
+  useEffect(() => {
+    const loadOrders = async () => {
+      const loadedOrders = await getOrders();
+      if (loadedOrders.length > 0) {
+        setOrders(loadedOrders);
+      } else {
+        // Fallback: Load from localStorage if Supabase empty
+        try {
+          const saved = localStorage.getItem('gerry_orders');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setOrders(parsed);
+          } else {
+            // Initial demo orders
+            setOrders([
+              { 
+                id: '1001', 
+                userId: 'user-demo-1', 
+                customerName: 'Alex Johnson', 
+                total: 12.50, 
+                status: 'Completed', 
+                date: '2024-03-10', 
+                itemsCount: 3,
+                items: [
+                   { ...PRODUCTS[0], quantity: 2, size: 'M' },
+                   { ...PRODUCTS[2], quantity: 1, size: 'L' }
+                ]
+              },
+              { 
+                id: '1002', 
+                userId: 'user-demo-1', 
+                customerName: 'Maria Garcia', 
+                total: 8.75, 
+                status: 'Processing', 
+                date: '2024-03-11', 
+                itemsCount: 2,
+                items: [
+                   { ...PRODUCTS[3], quantity: 2, size: 'M', note: 'Less ice' }
+                ]
+              },
+            ]);
+          }
+        } catch (e) {
+          console.error('Error loading orders from localStorage:', e);
+        }
+      }
+    };
+    loadOrders();
+  }, []);
+
+  // Realtime subscription to orders
+  useEffect(() => {
+    const unsubscribe = subscribeToOrders((updatedOrders) => {
+      setOrders(updatedOrders);
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   // --- PERSISTENCE EFFECTS (Save on Change) ---
   useEffect(() => localStorage.setItem('gerry_user', JSON.stringify(user)), [user]);
@@ -460,7 +490,7 @@ const App: React.FC = () => {
   };
 
   // Checkout Logic (FIXED: Now saves cart items to order + loyalty points)
-  const handleCheckout = (details: any) => {
+  const handleCheckout = async (details: any) => {
     const orderSubtotal = cartItems.reduce(
       (sum, item) => sum + calculateItemPrice(item, undefined, undefined, sizeLPrice) * item.quantity,
       0
@@ -483,7 +513,21 @@ const App: React.FC = () => {
       note: details.note // General order note
     };
 
-    setOrders(prev => [newOrder, ...prev]);
+    // Save to Supabase (or localStorage fallback)
+    const saved = await createOrder(newOrder);
+    if (saved) {
+      // Refresh orders from database
+      const updatedOrders = await getOrders();
+      if (updatedOrders.length > 0) {
+        setOrders(updatedOrders);
+      } else {
+        // Fallback: Update local state if Supabase not working
+        setOrders(prev => [newOrder, ...prev]);
+      }
+    } else {
+      // Fallback: Save to local state if save failed
+      setOrders(prev => [newOrder, ...prev]);
+    }
 
     // Cộng điểm hội viên sau khi thanh toán
     if (user) {
@@ -508,7 +552,23 @@ const App: React.FC = () => {
   const handleUpdateProduct = (updatedProduct: Product) => setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
   const handleDeleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
   
-  const handleUpdateOrderStatus = (id: string, status: OrderStatus) => setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+  const handleUpdateOrderStatus = async (id: string, status: OrderStatus) => {
+    // Update in Supabase (or localStorage fallback)
+    const updated = await updateOrderStatus(id, status);
+    if (updated) {
+      // Refresh orders from database
+      const updatedOrders = await getOrders();
+      if (updatedOrders.length > 0) {
+        setOrders(updatedOrders);
+      } else {
+        // Fallback: Update local state
+        setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+      }
+    } else {
+      // Fallback: Update local state if update failed
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+    }
+  };
   
   const handleAddBanner = (banner: Banner) => setBanners(prev => [...prev, banner]);
   const handleUpdateBanner = (updatedBanner: Banner) => setBanners(prev => prev.map(b => b.id === updatedBanner.id ? updatedBanner : b));

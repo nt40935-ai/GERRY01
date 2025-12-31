@@ -107,7 +107,9 @@ export const subscribeToOrders = (
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    if (supabase) {
+      supabase.removeChannel(channel);
+    }
   };
 };
 
@@ -143,5 +145,3 @@ function convertOrderToDbOrder(order: Order): any {
     note: order.note || null,
   };
 }
-<｜tool▁call▁end｜><｜tool▁call▁begin｜>
-read_file
