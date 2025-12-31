@@ -1,7 +1,4 @@
 // Service để làm việc với Orders từ Supabase
-// TODO: Sau khi setup Supabase, uncomment và sử dụng
-
-/*
 import { supabase } from './supabase';
 import { Order } from '../types';
 
@@ -146,10 +143,5 @@ function convertOrderToDbOrder(order: Order): any {
     note: order.note || null,
   };
 }
-*/
-
-// Temporary placeholder
-export const getOrders = async () => [];
-export const createOrder = async () => false;
-export const updateOrderStatus = async () => false;
-export const subscribeToOrders = () => null;
+<｜tool▁call▁end｜><｜tool▁call▁begin｜>
+read_file
