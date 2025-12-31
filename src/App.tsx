@@ -23,6 +23,9 @@ import UserProfile from './components/tai-khoan/UserProfile';
 import { CartItem, Product, Order, OrderStatus, Banner, User, FilterState, Language, BrandSettings, Category, DiscountCode, ProductSize, Review, Topping, Job, JobApplication, PartnershipContent, Combo, Reservation, ReservationStatus } from './types';
 import { PRODUCTS, BANNERS, INITIAL_CATEGORIES, MOCK_REVIEWS, TOPPINGS_LIST, DEFAULT_JOBS, DEFAULT_PARTNERSHIP_CONTENT, calculateItemPrice, calculateEarnedPoints } from './constants';
 import { getOrders, createOrder, updateOrderStatus, subscribeToOrders } from './services/orderService';
+import { getUsers, createUser, updateUser, subscribeToUsers } from './services/userService';
+import { getProducts, createProduct, updateProduct, deleteProduct, subscribeToProducts } from './services/productService';
+import { getReservations, createReservation, updateReservationStatus, subscribeToReservations } from './services/reservationService';
 
 const App: React.FC = () => {
   // --- APPLICATION STATE WITH PERSISTENCE ---
@@ -280,10 +283,64 @@ const App: React.FC = () => {
     loadOrders();
   }, []);
 
+  // Load users, products, reservations from Supabase on mount
+  useEffect(() => {
+    const loadData = async () => {
+      // Load users
+      const loadedUsers = await getUsers();
+      if (loadedUsers.length > 0) {
+        setAllUsers(loadedUsers);
+      }
+
+      // Load products
+      const loadedProducts = await getProducts();
+      if (loadedProducts.length > 0) {
+        setProducts(loadedProducts);
+      }
+
+      // Load reservations
+      const loadedReservations = await getReservations();
+      if (loadedReservations.length > 0) {
+        setReservations(loadedReservations);
+      }
+    };
+    loadData();
+  }, []);
+
   // Realtime subscription to orders
   useEffect(() => {
     const unsubscribe = subscribeToOrders((updatedOrders) => {
       setOrders(updatedOrders);
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Realtime subscription to users
+  useEffect(() => {
+    const unsubscribe = subscribeToUsers((updatedUsers) => {
+      setAllUsers(updatedUsers);
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Realtime subscription to products
+  useEffect(() => {
+    const unsubscribe = subscribeToProducts((updatedProducts) => {
+      setProducts(updatedProducts);
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Realtime subscription to reservations
+  useEffect(() => {
+    const unsubscribe = subscribeToReservations((updatedReservations) => {
+      setReservations(updatedReservations);
     });
     return () => {
       if (unsubscribe) unsubscribe();
@@ -309,7 +366,7 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('gerry_reservations', JSON.stringify(reservations)), [reservations]);
 
   // Login Handler
-  const handleLogin = (incomingUser: User) => {
+  const handleLogin = async (incomingUser: User) => {
     const existingUser = allUsers.find(u => u.email === incomingUser.email);
     
     if (existingUser) {
@@ -318,11 +375,31 @@ const App: React.FC = () => {
           name: incomingUser.name, 
           avatar: incomingUser.avatar || existingUser.avatar 
       };
-      setAllUsers(prev => prev.map(u => u.id === existingUser.id ? updatedUser : u));
-      setUser(updatedUser);
+      // Save to Supabase
+      await updateUser(updatedUser);
+      // Refresh from database
+      const updatedUsers = await getUsers();
+      if (updatedUsers.length > 0) {
+        setAllUsers(updatedUsers);
+        const refreshedUser = updatedUsers.find(u => u.id === updatedUser.id) || updatedUser;
+        setUser(refreshedUser);
+      } else {
+        setAllUsers(prev => prev.map(u => u.id === existingUser.id ? updatedUser : u));
+        setUser(updatedUser);
+      }
     } else {
-      setAllUsers(prev => [...prev, incomingUser]);
-      setUser(incomingUser);
+      // Save new user to Supabase
+      await createUser(incomingUser);
+      // Refresh from database
+      const updatedUsers = await getUsers();
+      if (updatedUsers.length > 0) {
+        setAllUsers(updatedUsers);
+        const newUser = updatedUsers.find(u => u.email === incomingUser.email) || incomingUser;
+        setUser(newUser);
+      } else {
+        setAllUsers(prev => [...prev, incomingUser]);
+        setUser(incomingUser);
+      }
     }
     // Default to admin view on login if admin
     if (incomingUser.role === 'admin') setAdminView(true);
@@ -336,9 +413,19 @@ const App: React.FC = () => {
   };
 
   // Update User Profile Handler
-  const handleUpdateUserProfile = (updatedUser: User) => {
-    setAllUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-    setUser(updatedUser);
+  const handleUpdateUserProfile = async (updatedUser: User) => {
+    // Save to Supabase
+    await updateUser(updatedUser);
+    // Refresh from database
+    const updatedUsers = await getUsers();
+    if (updatedUsers.length > 0) {
+      setAllUsers(updatedUsers);
+      const refreshedUser = updatedUsers.find(u => u.id === updatedUser.id) || updatedUser;
+      setUser(refreshedUser);
+    } else {
+      setAllUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+      setUser(updatedUser);
+    }
   };
 
   // Add Review Handler
@@ -548,9 +635,35 @@ const App: React.FC = () => {
   };
 
   // Admin Logic Handlers
-  const handleAddProduct = (product: Product) => setProducts(prev => [...prev, product]);
-  const handleUpdateProduct = (updatedProduct: Product) => setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-  const handleDeleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
+  const handleAddProduct = async (product: Product) => {
+    await createProduct(product);
+    const updatedProducts = await getProducts();
+    if (updatedProducts.length > 0) {
+      setProducts(updatedProducts);
+    } else {
+      setProducts(prev => [...prev, product]);
+    }
+  };
+  
+  const handleUpdateProduct = async (updatedProduct: Product) => {
+    await updateProduct(updatedProduct);
+    const updatedProducts = await getProducts();
+    if (updatedProducts.length > 0) {
+      setProducts(updatedProducts);
+    } else {
+      setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    }
+  };
+  
+  const handleDeleteProduct = async (id: string) => {
+    await deleteProduct(id);
+    const updatedProducts = await getProducts();
+    if (updatedProducts.length >= 0) {
+      setProducts(updatedProducts);
+    } else {
+      setProducts(prev => prev.filter(p => p.id !== id));
+    }
+  };
   
   const handleUpdateOrderStatus = async (id: string, status: OrderStatus) => {
     // Update in Supabase (or localStorage fallback)
@@ -609,9 +722,25 @@ const App: React.FC = () => {
   const handleDeleteCombo = (id: string) => setCombos(prev => prev.filter(c => c.id !== id));
 
   // Reservation Logic
-  const handleCreateReservation = (reservation: Reservation) => setReservations(prev => [reservation, ...prev]);
-  const handleUpdateReservationStatus = (id: string, status: ReservationStatus) =>
-    setReservations(prev => prev.map(r => (r.id === id ? { ...r, status } : r)));
+  const handleCreateReservation = async (reservation: Reservation) => {
+    await createReservation(reservation);
+    const updatedReservations = await getReservations();
+    if (updatedReservations.length > 0) {
+      setReservations(updatedReservations);
+    } else {
+      setReservations(prev => [reservation, ...prev]);
+    }
+  };
+  
+  const handleUpdateReservationStatus = async (id: string, status: ReservationStatus) => {
+    await updateReservationStatus(id, status);
+    const updatedReservations = await getReservations();
+    if (updatedReservations.length > 0) {
+      setReservations(updatedReservations);
+    } else {
+      setReservations(prev => prev.map(r => (r.id === id ? { ...r, status } : r)));
+    }
+  };
 
   // Recruitment Logic
   const handleAddJob = (job: Job) => setJobs(prev => [...prev, job]);
