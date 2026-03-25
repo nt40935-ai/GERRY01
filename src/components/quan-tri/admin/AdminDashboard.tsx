@@ -165,14 +165,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     const currentIds = new Set(orders.map(o => o.id));
 
-    // If we still have no baseline seen ids, initialize and skip toast.
-    if (!prevOrderIdsRef.current) {
-      prevOrderIdsRef.current = currentIds;
-      return;
-    }
+    // If we still have no baseline seen ids, treat as "none seen yet"
+    // so the first time admin opens the dashboard they still get notified
+    // about existing/new pending orders.
+    const seenIds = prevOrderIdsRef.current ?? new Set<string>();
 
     const newPendingOrders = orders.filter(
-      (o) => o.status === 'Pending' && !prevOrderIdsRef.current!.has(o.id)
+      (o) => o.status === 'Pending' && !seenIds.has(o.id)
     );
 
     if (newPendingOrders.length > 0) {
@@ -184,6 +183,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setToast({ message: msg, orderId: order.id });
     }
 
+    // Mark current orders as "seen" to avoid notifying repeatedly.
     prevOrderIdsRef.current = currentIds;
     try {
       localStorage.setItem(SEEN_ORDERS_KEY, JSON.stringify(Array.from(currentIds)));
