@@ -32,6 +32,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
   });
   const t = TRANSLATIONS[language];
 
+  const normalizeDiscountCode = (value: string) => {
+    // Remove zero-width chars + collapse/strip whitespace, then uppercase for stable matching.
+    return value
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  };
+
   const loyaltyInfo = user ? getLoyaltyTier(user.loyaltyPoints, {
     loyaltyBronzeMin: brandSettings.loyaltyBronzeMin,
     loyaltySilverMin: brandSettings.loyaltySilverMin,
@@ -90,14 +98,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
   // Apply discount code
   const handleApplyDiscount = () => {
     setDiscountError('');
-    const code = discountCode.trim().toUpperCase();
+    const code = normalizeDiscountCode(discountCode.trim());
     
     if (!code) {
       setDiscountError(t.checkout.invalid_code);
       return;
     }
 
-    const promo = promotions.find(p => p.code.trim().toUpperCase() === code);
+    const promo = promotions.find(p => normalizeDiscountCode(p.code) === code);
     
     if (!promo) {
       setDiscountError(t.checkout.invalid_code);
