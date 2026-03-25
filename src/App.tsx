@@ -964,6 +964,7 @@ const App: React.FC = () => {
          onCheckout={handleCheckout}
          language={language}
          brandSettings={brandSettings}
+         promotions={promotions}
          sizeLPrice={sizeLPrice}
       />
       
