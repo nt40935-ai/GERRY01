@@ -54,3 +54,5 @@ Tôi sẽ tạo file hướng dẫn chi tiết cách tích hợp vào App.tsx. B
 
 **Bạn đã setup Supabase project chưa? Nếu rồi, tôi sẽ giúp tích hợp vào App.tsx ngay!**
 
+
+

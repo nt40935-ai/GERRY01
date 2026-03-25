@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Product, Order, OrderStatus, Banner, BrandSettings, Category, DiscountCode, Language, User, Topping, Job, JobApplication, PartnershipContent, Combo, Reservation, ReservationStatus } from '../../../types';
 import { LayoutDashboard, Coffee, ShoppingBag, LogOut, TrendingUp, Users, DollarSign, Image as ImageIcon, Settings, BarChart3, Globe, List, Ticket, Store, Layers, Briefcase, Inbox, MessageSquare, PackagePlus, CalendarDays, Ruler } from 'lucide-react';
 import ProductManager from './ProductManager';
@@ -138,6 +138,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const t = TRANSLATIONS[language];
 
+  const SEEN_ORDERS_KEY = 'gerry_admin_seen_order_ids';
+  const prevOrderIdsRef = useRef<Set<string> | null>(null);
+  const [toast, setToast] = useState<null | { message: string; orderId?: string }>(null);
+  const toastTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SEEN_ORDERS_KEY);
+      if (saved) prevOrderIdsRef.current = new Set(JSON.parse(saved));
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
   // Calculate new orders for badge
   const pendingOrdersCount = orders.filter(o => o.status === 'Pending').length;
 
@@ -146,6 +160,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const totalOrders = orders.length;
   const totalProducts = products.length;
   const activeBannersCount = banners.filter(b => b.isActive).length;
+
+  // Show in-app notification when a new pending order arrives.
+  useEffect(() => {
+    const currentIds = new Set(orders.map(o => o.id));
+
+    // If we still have no baseline seen ids, initialize and skip toast.
+    if (!prevOrderIdsRef.current) {
+      prevOrderIdsRef.current = currentIds;
+      return;
+    }
+
+    const newPendingOrders = orders.filter(
+      (o) => o.status === 'Pending' && !prevOrderIdsRef.current!.has(o.id)
+    );
+
+    if (newPendingOrders.length > 0) {
+      const order = newPendingOrders[0];
+      const msg =
+        language === 'vi'
+          ? `Có đơn hàng mới #${order.id} từ ${order.customerName}. Tổng: ${order.total.toFixed(2)}`
+          : `New order #${order.id} from ${order.customerName}. Total: ${order.total.toFixed(2)}`;
+      setToast({ message: msg, orderId: order.id });
+    }
+
+    prevOrderIdsRef.current = currentIds;
+    try {
+      localStorage.setItem(SEEN_ORDERS_KEY, JSON.stringify(Array.from(currentIds)));
+    } catch {
+      // ignore storage errors
+    }
+  }, [orders, language]);
+
+  useEffect(() => {
+    if (!toast) return;
+    if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = window.setTimeout(() => setToast(null), 6500);
+    return () => {
+      if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+    };
+  }, [toast]);
 
   const NavItem = ({ id, icon: Icon, label, badge }: { id: typeof activeTab, icon: any, label: string, badge?: number }) => (
     <button
@@ -170,6 +224,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <div className="flex h-screen bg-gray-100" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+      {toast && (
+        <div className="fixed top-4 right-4 z-[200] bg-white border border-gray-200 shadow-lg rounded-2xl p-4 w-[360px]">
+          <div className="font-bold text-coffee-900">
+            {language === 'vi' ? 'Thông báo' : 'Notification'}
+          </div>
+          <div className="text-sm text-gray-600 mt-1">{toast.message}</div>
+          <div className="flex items-center justify-end gap-2 mt-3">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('orders');
+                setToast(null);
+              }}
+              className="px-3 py-1.5 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              {language === 'vi' ? 'Xem đơn' : 'View orders'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              {language === 'vi' ? 'Đóng' : 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
       {/* Sidebar */}
       <div className="w-64 bg-coffee-900 text-white p-6 flex flex-col flex-shrink-0">
         <div className="flex items-center gap-2 mb-10">

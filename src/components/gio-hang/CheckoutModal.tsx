@@ -68,14 +68,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
       return 0;
     }
 
-    // Calculate applicable total
-    if (!code.applicableProductIds || code.applicableProductIds.length === 0) {
-      return 0;
-    }
+    // Calculate applicable total.
+    // In this app, `applicableProductIds: []` is treated as "applies to all items".
+    const applicableItems =
+      !code.applicableProductIds || code.applicableProductIds.length === 0
+        ? cartItems
+        : cartItems.filter(item => code.applicableProductIds.includes(item.originalId || item.id));
 
-    const applicableTotal = cartItems
-      .filter(item => code.applicableProductIds.includes(item.originalId || item.id))
-      .reduce((sum, item) => sum + calculateItemPrice(item, undefined, undefined, sizeLPrice) * item.quantity, 0);
+    const applicableTotal = applicableItems.reduce(
+      (sum, item) => sum + calculateItemPrice(item, undefined, undefined, sizeLPrice) * item.quantity,
+      0
+    );
 
     if (code.type === 'percent') {
       return (applicableTotal * code.value) / 100;
@@ -94,15 +97,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose, cartItem
       return;
     }
 
-    const promo = promotions.find(p => p.code.toUpperCase() === code);
+    const promo = promotions.find(p => p.code.trim().toUpperCase() === code);
     
     if (!promo) {
-      setDiscountError(t.checkout.invalid_code);
-      return;
-    }
-
-    // Require targeted products for every code to avoid applying to all items
-    if (!promo.applicableProductIds || promo.applicableProductIds.length === 0) {
       setDiscountError(t.checkout.invalid_code);
       return;
     }

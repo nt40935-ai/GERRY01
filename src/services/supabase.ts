@@ -19,3 +19,5 @@ export const supabase: SupabaseClient | null = supabaseUrl && supabaseAnonKey
 
 export default supabase;
 
+
+
